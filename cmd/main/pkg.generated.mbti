@@ -1,0 +1,61 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "MoonCache/cmd/main"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub enum CachePolicy {
+  FIFO
+  LRU
+  LFU
+  LRU_K
+  HashLRU
+  ARC
+}
+
+pub struct LruCache[K, V] {
+  nodeMap : Map[K, LruNode[K, V]]
+  capacity : UInt
+  lruNodeLink : LruNodeLink[K, V]
+}
+fn[K : Eq + Hash, V] LruCache::addNewNode(Self[K, V], LruNode[K, V]) -> Unit
+fn[K : Eq + Hash, V] LruCache::evictLeastRecent(Self[K, V]) -> Unit
+fn[K : Eq + Hash, V] LruCache::get(Self[K, V], K) -> V?
+fn[K, V] LruCache::insertNode(Self[K, V], LruNode[K, V]) -> Unit
+fn[K, V] LruCache::moveToMostRecent(Self[K, V], LruNode[K, V]) -> Unit
+fn[K, V] LruCache::new(UInt) -> Self[K, V]
+fn[K : Eq + Hash, V] LruCache::put(Self[K, V], K, V) -> Unit
+fn[K : Eq + Hash, V] LruCache::remove(Self[K, V], K) -> Unit
+fn[K, V] LruCache::removeNode(Self[K, V], LruNode[K, V]) -> Unit
+fn[K, V] LruCache::updateExistingNode(Self[K, V], LruNode[K, V], V) -> Unit
+
+pub struct LruNode[Key, Value] {
+  key : Key?
+  mut value : Value?
+  mut accessCount : UInt
+  mut prev : Ref[LruNode[Key, Value]]?
+  mut next : Ref[LruNode[Key, Value]]?
+}
+fn[K, V] LruNode::getAccessCount(Self[K, V]) -> UInt
+fn[K, V] LruNode::getKey(Self[K, V]) -> K
+fn[K, V] LruNode::getValue(Self[K, V]) -> V
+fn[K, V] LruNode::incrementAccessCount(Self[K, V]) -> Unit
+fn[Key, Value] LruNode::new(Key?, Value?) -> Self[Key, Value]
+fn[K, V] LruNode::setValue(Self[K, V], V) -> Unit
+
+pub struct LruNodeLink[Key, Value] {
+  dummyTail : Ref[LruNode[Key, Value]]
+  dummyHead : Ref[LruNode[Key, Value]]
+  mut size : UInt
+}
+fn[K, V] LruNodeLink::insertNode(Self[K, V], Ref[LruNode[K, V]]) -> Unit
+fn[Key, Value] LruNodeLink::new(UInt) -> Self[Key, Value]
+fn[K, V] LruNodeLink::removeNode(Self[K, V], Ref[LruNode[K, V]]) -> Unit
+
+// Type aliases
+
+// Traits
+pub trait Cache {
+}
