@@ -1,74 +1,127 @@
 ///|
 pub struct LruKCache[K, V] {
   lrucache : LruCache[K, V]
-  historyValueMap : Map[K, V]
+  history_value_map : Map[K, V]
   k : UInt
-  historyList : LruCache[K, UInt]
+  history_capacity : UInt
+  history_count : Map[K, UInt]
 }
 
 ///|
+/// 创建新的 LRU-K 缓存
 pub fn[K, V] LruKCache::new(
   capacity : UInt,
-  historyCapacity : UInt,
   k : UInt,
+  history_capacity : UInt,
 ) -> LruKCache[K, V] {
-  let lrucache : LruCache[K, V] = LruCache::new(capacity)
-  let historyValueMap : Map[K, V] = Map::new()
-  let historyList : LruCache[K, UInt] = LruCache::new(historyCapacity)
-  LruKCache::{ lrucache, historyValueMap, k, historyList }
+  let lrucache = LruCache::new(capacity)
+  let history_value_map = Map::new()
+  let history_count = Map::new()
+  LruKCache::{ lrucache, history_value_map, k, history_capacity, history_count }
 }
 
 ///|
+/// 获取键对应的值
 pub fn[K : Eq + Hash, V] LruKCache::get(self : LruKCache[K, V], key : K) -> V? {
-  // 1. 尝试从主缓存获取
-  let value = self.lrucache.get(key)
-
-  // 2. 更新访问计数
-  let mut historyCount = self.historyList.get(key).unwrap_or(0)
-  historyCount += 1
-  self.historyList.put(key, historyCount)
-
-  // 3. 如果在主缓存中，直接返回
-  if value is Some(_) {
-    return value
+  // 1️⃣ 尝试直接从主缓存获取
+  match self.lrucache.get(key) {
+    Some(value) => return Some(value)
+    None => ()
   }
 
-  // 4. 未命中主缓存，判断是否达到 K 次访问
-  if historyCount >= self.k {
-    match self.historyValueMap.get(key) {
-      Some(node) => {
-        let val = node
-        self.historyList.remove(key)
-        self.historyValueMap.remove(key)
+  // 2️⃣ 更新访问次数
+  let count = match self.history_count.get(key) {
+    Some(v) => v + 1
+    None => 1
+  }
+  self.history_count.set(key, count)
+
+  // 3️⃣ 如果未命中主缓存但访问次数达到 K 次，从历史中加载到主缓存
+  if count >= self.k {
+    match self.history_value_map.get(key) {
+      Some(value) => {
+        let val = value
+        self.history_value_map.remove(key)
+        self.history_count.remove(key)
         self.lrucache.put(key, val)
         return Some(val)
       }
-      None => return None
+      None => ()
     }
   }
-
-  // 5. 未命中主缓存，访问次数未达 k
-  return None
+  None
 }
 
 ///|
+/// 插入键值对
 pub fn[K : Eq + Hash, V] LruKCache::put(
   self : LruKCache[K, V],
   key : K,
   value : V,
 ) -> Unit {
-  let existValue = self.lrucache.get(key)
-  if existValue is Some(_) {
-    self.lrucache.put(key, value)
-    return
+  // 1️⃣ 如果主缓存中已存在，则更新
+  match self.lrucache.get(key) {
+    Some(_) => {
+      self.lrucache.put(key, value)
+      return
+    }
+    None => ()
   }
-  let mut historyCount = self.historyList.get(key).unwrap_or(0)
-  historyCount += 1
-  self.historyList.put(key, historyCount)
-  self.historyValueMap.set(key, value)
-  if historyCount >= self.k {
-    self.historyList.remove(key)
-    self.historyValueMap.remove(key)
+
+  // 2️⃣ 更新访问次数
+  let count = match self.history_count.get(key) {
+    Some(v) => v + 1
+    None => 1
+  }
+  self.history_count.set(key, count)
+  self.history_value_map.set(key, value)
+
+  // 3️⃣ 达到 K 次访问后进入主缓存
+  if count >= self.k {
+    self.history_count.remove(key)
+    self.history_value_map.remove(key)
     self.lrucache.put(key, value)
   }
+}
+
+///|
+test {
+  println("==== LRU Cache 测试开始 ====")
+
+  // 创建一个容量为 3 的 LRU 缓存
+  let cache = LruKCache::new(3, 1, 3)
+
+  // 插入三个元素
+  cache.put("A", 1)
+  cache.put("B", 2)
+  cache.put("C", 3)
+  println("初始缓存状态：")
+  println(cache.get("A"))
+  println(cache.get("B"))
+  println(cache.get("C"))
+
+  // 访问 A，使其成为最近使用
+  let a_val = cache.get("A")
+  println(a_val)
+
+  // 插入新元素 D，触发淘汰（应淘汰最久未访问的 B）
+  cache.put("D", 4)
+  println("插入 D 后：")
+  println(cache.get("A"))
+  println(cache.get("B")) // 应为 None
+  println(cache.get("C"))
+  println(cache.get("D"))
+
+  // 更新 A 的值并再次访问
+  cache.put("A", 10)
+  println(cache.get("A"))
+
+  // 再插入 E，检查淘汰逻辑（此时应淘汰 C）
+  cache.put("E", 5)
+  println("插入 E 后：")
+  println(cache.get("A"))
+  println(cache.get("C")) // 应为 None
+  println(cache.get("D"))
+  println(cache.get("E"))
+  println("==== 测试结束 ====")
 }
