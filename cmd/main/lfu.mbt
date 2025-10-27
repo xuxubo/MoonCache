@@ -305,6 +305,68 @@ pub fn[K : Eq + Hash, V] LfuCache::purge(self : LfuCache[K, V]) -> Unit {
 }
 
 ///|
+pub struct HashLfuCache[K, V] {
+  sliceNum : UInt
+  capacity : UInt
+  shards : Array[LfuCache[K, V]]
+}
+
+///|
+pub fn[K : Eq + Hash, V] HashLfuCache::new(
+  sliceNum : UInt,
+  capacity : UInt,
+  maxAverageNum : UInt,
+) -> HashLfuCache[K, V] {
+  let sliceSize = capacity / sliceNum
+  let shards = Array::new(capacity=sliceNum.reinterpret_as_int())
+  for i = 0; i < sliceSize.reinterpret_as_int(); i = i + 1 {
+    let node : LfuCache[K, V] = LfuCache::new(sliceSize, maxAverageNum)
+    shards[i] = node
+  }
+  HashLfuCache::{ sliceNum, capacity, shards }
+}
+
+///|
+/// 内部辅助函数：根据 key 计算所在分片
+fn[K, V] HashLfuCache::get_shard_index(
+  self : HashLfuCache[K, V],
+  key : UInt,
+) -> UInt {
+  key % self.sliceNum
+}
+
+///|
+/// 获取 key 对应的值
+pub fn[K : Eq + Hash, V] HashLfuCache::get(
+  self : HashLfuCache[K, V],
+  key : K,
+  capacity : Int,
+) -> V? {
+  let idx = self.get_shard_index(capacity.reinterpret_as_uint())
+  let shard = self.shards[idx.reinterpret_as_int()]
+  shard.get(key)
+}
+
+///|
+pub fn[K : Eq + Hash, V] HashLfuCache::put(
+  self : HashLfuCache[K, V],
+  key : K,
+  value : V,
+  capacity : Int,
+) -> Unit {
+  let idx = self.get_shard_index(capacity.reinterpret_as_uint())
+  let shard = self.shards[idx.reinterpret_as_int()]
+  shard.put(key, value)
+}
+
+///|
+pub fn[K : Eq + Hash, V] HashLfuCache::purge(self : HashLfuCache[K, V]) -> Unit {
+  for nodeList in self.shards {
+    nodeList.purge()
+  }
+}
+
+///|
 test {
   println("==== LRU Cache 测试开始 ====")
 
