@@ -268,6 +268,31 @@ pub fn[K, V] LfuCache::updateMinFreq(self : LfuCache[K, V]) -> Unit {
 }
 
 ///|
+pub fn[K : Eq + Hash, V] LfuCache::evictLeastFrequent(
+  self : LfuCache[K, V],
+) -> Unit {
+  let _ = self.popLeastFrequent()
+
+}
+
+///|
+pub fn[K : Eq + Hash, V] LfuCache::popLeastFrequent(
+  self : LfuCache[K, V],
+) -> LfuNode[K, V]? {
+  let leastFrequentListOpt = self.freqToFreqList.get(self.minFreq)
+  if leastFrequentListOpt is None || leastFrequentListOpt.unwrap().isEmpty() {
+    return None
+  }
+  let leastFrequentList = leastFrequentListOpt.unwrap()
+  let nodeRefToPop = leastFrequentList.head.val.next.unwrap()
+  let nodeToPop = nodeRefToPop.val
+  leastFrequentList.removeNode(nodeRefToPop)
+  self.nodeMap.remove(nodeToPop.key.unwrap())
+  self.decreaseFreqNum(nodeToPop.freq)
+  Some(nodeToPop)
+}
+
+///|
 pub fn[K : Eq + Hash, V] LfuCache::put(
   self : LfuCache[K, V],
   key : K,

@@ -161,10 +161,28 @@ pub fn[K : Eq + Hash, V] addNewNode(
 pub fn[K : Eq + Hash, V] LruCache::evictLeastRecent(
   self : LruCache[K, V],
 ) -> Unit {
-  let leastRecent = self.lruNodeLink.dummyHead.val.next.unwrap()
-  self.removeNode(leastRecent.val)
-  let key = leastRecent.val.getKey()
-  self.nodeMap.remove(key)
+  let _ = self.popLeastRecent()
+
+}
+
+///|
+pub fn[K : Eq + Hash, V] LruCache::popLeastRecent(
+  self : LruCache[K, V],
+) -> LruNode[K, V]? {
+  if self.nodeMap.is_empty() {
+    return None
+  }
+  // 获取最久未使用的节点 (dummyHead 的下一个)
+  let nodeToPopRef = self.lruNodeLink.dummyHead.val.next.unwrap()
+  let nodeToPop = nodeToPopRef.val
+  // 从链表中移除
+  self.removeNode(nodeToPopRef.val)
+  // 从哈希表中移除
+  if nodeToPop.key is Some(key) {
+    self.nodeMap.remove(key)
+  }
+  // 返回被淘汰的节点
+  Some(nodeToPop)
 }
 
 ///|
