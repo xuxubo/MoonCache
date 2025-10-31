@@ -53,9 +53,9 @@ pub fn[Key, Value] LfuNodeList::isEmpty(self : LfuNodeList[Key, Value]) -> Bool 
 }
 
 ///|
-pub fn[K, V] LfuNodeList::insertNode(
-  self : LfuNodeList[K, V],
-  node : Ref[LfuNode[K, V]],
+pub fn[Key, Value] LfuNodeList::insertNode(
+  self : LfuNodeList[Key, Value],
+  node : Ref[LfuNode[Key, Value]],
 ) -> Unit { //尾部插入节点
   // 取 dummyTail 之前的节点
   let prevNode = self.tail.val.prev.unwrap()
@@ -69,9 +69,9 @@ pub fn[K, V] LfuNodeList::insertNode(
 }
 
 ///|
-pub fn[K, V] LfuNodeList::removeNode(
-  self : LfuNodeList[K, V],
-  node : Ref[LfuNode[K, V]],
+pub fn[Key, Value] LfuNodeList::removeNode(
+  self : LfuNodeList[Key, Value],
+  node : Ref[LfuNode[Key, Value]],
 ) -> Unit {
   let prevNode = node.val.prev.unwrap()
   let nextNode = node.val.next.unwrap()
@@ -87,19 +87,19 @@ pub fn[K, V] LfuNodeList::removeNode(
 }
 
 ///|
-pub fn[K, V] LfuNodeList::getFirstNode(
-  self : LfuNodeList[K, V],
-) -> LfuNode[K, V] {
+pub fn[Key, Value] LfuNodeList::getFirstNode(
+  self : LfuNodeList[Key, Value],
+) -> LfuNode[Key, Value] {
   let a = self.head.val
   a.next.unwrap().val
 }
 
 ///|
-pub struct LfuCache[K, V] {
-  nodeMap : Map[K, LfuNode[K, V]]
+pub struct LfuCache[Key, Value] {
+  nodeMap : Map[Key, LfuNode[Key, Value]]
   capacity : UInt
-  lruNodeLink : LfuNodeList[K, V]
-  freqToFreqList : Map[UInt, LfuNodeList[K, V]]
+  lruNodeLink : LfuNodeList[Key, Value]
+  freqToFreqList : Map[UInt, LfuNodeList[Key, Value]]
   mut minFreq : UInt
   maxAverageNum : UInt
   mut curAverageNum : UInt
@@ -107,13 +107,13 @@ pub struct LfuCache[K, V] {
 }
 
 ///|
-pub fn[K, V] LfuCache::new(
+pub fn[Key, Value] LfuCache::new(
   capacity : UInt,
   maxAverageNum : UInt,
-) -> LfuCache[K, V] {
-  let nodeMap : Map[K, LfuNode[K, V]] = Map::new()
+) -> LfuCache[Key, Value] {
+  let nodeMap : Map[Key, LfuNode[Key, Value]] = Map::new()
   let lruNodeLink = LfuNodeList::new()
-  let freqToFreqList : Map[UInt, LfuNodeList[K, V]] = Map::new()
+  let freqToFreqList : Map[UInt, LfuNodeList[Key, Value]] = Map::new()
   let minFreq = maxAverageNum
   LfuCache::{
     nodeMap,
@@ -128,9 +128,9 @@ pub fn[K, V] LfuCache::new(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::getInternal(
-  self : LfuCache[K, V],
-  node : LfuNode[K, V],
+pub fn[Key : Eq + Hash, Value] LfuCache::getInternal(
+  self : LfuCache[Key, Value],
+  node : LfuNode[Key, Value],
 ) -> Unit {
   self.removeFromFreqList(node)
   node.freq += 1
@@ -143,10 +143,10 @@ pub fn[K : Eq + Hash, V] LfuCache::getInternal(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::putInternal(
-  self : LfuCache[K, V],
-  key : K,
-  value : V,
+pub fn[Key : Eq + Hash, Value] LfuCache::putInternal(
+  self : LfuCache[Key, Value],
+  key : Key,
+  value : Value,
 ) -> Unit {
   if self.nodeMap.size() == self.capacity.reinterpret_as_int() {
     self.kickOut()
@@ -161,7 +161,9 @@ pub fn[K : Eq + Hash, V] LfuCache::putInternal(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::kickOut(self : LfuCache[K, V]) -> Unit {
+pub fn[Key : Eq + Hash, Value] LfuCache::kickOut(
+  self : LfuCache[Key, Value],
+) -> Unit {
   let freqList = self.freqToFreqList.get(self.minFreq)
   let firstNode = freqList.unwrap().getFirstNode()
   self.nodeMap.remove(firstNode.key.unwrap())
@@ -169,9 +171,9 @@ pub fn[K : Eq + Hash, V] LfuCache::kickOut(self : LfuCache[K, V]) -> Unit {
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::removeFromFreqList(
-  self : LfuCache[K, V],
-  node : LfuNode[K, V],
+pub fn[Key : Eq + Hash, Value] LfuCache::removeFromFreqList(
+  self : LfuCache[Key, Value],
+  node : LfuNode[Key, Value],
 ) -> Unit {
   if node.key is None {
     return
@@ -185,9 +187,9 @@ pub fn[K : Eq + Hash, V] LfuCache::removeFromFreqList(
 
 ///|
 /// 将节点加入对应频率的链表（若不存在则创建）
-pub fn[K : Eq + Hash, V] LfuCache::addToFreqList(
-  self : LfuCache[K, V],
-  node : LfuNode[K, V],
+pub fn[Key : Eq + Hash, Value] LfuCache::addToFreqList(
+  self : LfuCache[Key, Value],
+  node : LfuNode[Key, Value],
 ) -> Unit {
   if node.key is None {
     return
@@ -207,7 +209,9 @@ pub fn[K : Eq + Hash, V] LfuCache::addToFreqList(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::addFreqNum(self : LfuCache[K, V]) -> Unit {
+pub fn[Key : Eq + Hash, Value] LfuCache::addFreqNum(
+  self : LfuCache[Key, Value],
+) -> Unit {
   self.curTotalNum += 1
   if self.nodeMap.is_empty() {
     self.curAverageNum = 0
@@ -221,8 +225,8 @@ pub fn[K : Eq + Hash, V] LfuCache::addFreqNum(self : LfuCache[K, V]) -> Unit {
 }
 
 ///|
-pub fn[K, V] LfuCache::decreaseFreqNum(
-  self : LfuCache[K, V],
+pub fn[Key, Value] LfuCache::decreaseFreqNum(
+  self : LfuCache[Key, Value],
   num : UInt,
 ) -> Unit {
   self.curTotalNum -= num
@@ -235,8 +239,8 @@ pub fn[K, V] LfuCache::decreaseFreqNum(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::handleOverMaxAverageNum(
-  self : LfuCache[K, V],
+pub fn[Key : Eq + Hash, Value] LfuCache::handleOverMaxAverageNum(
+  self : LfuCache[Key, Value],
 ) -> Unit {
   if self.nodeMap.is_empty() {
     return
@@ -255,7 +259,7 @@ pub fn[K : Eq + Hash, V] LfuCache::handleOverMaxAverageNum(
 }
 
 ///|
-pub fn[K, V] LfuCache::updateMinFreq(self : LfuCache[K, V]) -> Unit {
+pub fn[Key, Value] LfuCache::updateMinFreq(self : LfuCache[Key, Value]) -> Unit {
   self.minFreq = self.maxAverageNum
   self.freqToFreqList.eachi((_, k, _) => if self.minFreq > k {
     self.minFreq = k
@@ -268,17 +272,17 @@ pub fn[K, V] LfuCache::updateMinFreq(self : LfuCache[K, V]) -> Unit {
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::evictLeastFrequent(
-  self : LfuCache[K, V],
+pub fn[Key : Eq + Hash, Value] LfuCache::evictLeastFrequent(
+  self : LfuCache[Key, Value],
 ) -> Unit {
   let _ = self.popLeastFrequent()
 
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::popLeastFrequent(
-  self : LfuCache[K, V],
-) -> LfuNode[K, V]? {
+pub fn[Key : Eq + Hash, Value] LfuCache::popLeastFrequent(
+  self : LfuCache[Key, Value],
+) -> LfuNode[Key, Value]? {
   let leastFrequentListOpt = self.freqToFreqList.get(self.minFreq)
   if leastFrequentListOpt is None || leastFrequentListOpt.unwrap().isEmpty() {
     return None
@@ -293,10 +297,10 @@ pub fn[K : Eq + Hash, V] LfuCache::popLeastFrequent(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::put(
-  self : LfuCache[K, V],
-  key : K,
-  value : V,
+pub fn[Key : Eq + Hash, Value] LfuCache::put(
+  self : LfuCache[Key, Value],
+  key : Key,
+  value : Value,
 ) -> Unit {
   if self.capacity == 0 {
     return
@@ -311,7 +315,10 @@ pub fn[K : Eq + Hash, V] LfuCache::put(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::get(self : LfuCache[K, V], key : K) -> V? {
+pub fn[Key : Eq + Hash, Value] LfuCache::get(
+  self : LfuCache[Key, Value],
+  key : Key,
+) -> Value? {
   let nodeOpt = self.nodeMap.get(key)
   match nodeOpt {
     None => None
@@ -324,71 +331,11 @@ pub fn[K : Eq + Hash, V] LfuCache::get(self : LfuCache[K, V], key : K) -> V? {
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LfuCache::purge(self : LfuCache[K, V]) -> Unit {
+pub fn[Key : Eq + Hash, Value] LfuCache::purge(
+  self : LfuCache[Key, Value],
+) -> Unit {
   self.nodeMap.clear()
   self.freqToFreqList.clear()
-}
-
-///|
-pub struct HashLfuCache[K, V] {
-  sliceNum : UInt
-  capacity : UInt
-  shards : Array[LfuCache[K, V]]
-}
-
-///|
-pub fn[K : Eq + Hash, V] HashLfuCache::new(
-  sliceNum : UInt,
-  capacity : UInt,
-  maxAverageNum : UInt,
-) -> HashLfuCache[K, V] {
-  let sliceSize = capacity / sliceNum
-  let shards = Array::new(capacity=sliceNum.reinterpret_as_int())
-  for i = 0; i < sliceSize.reinterpret_as_int(); i = i + 1 {
-    let node : LfuCache[K, V] = LfuCache::new(sliceSize, maxAverageNum)
-    shards[i] = node
-  }
-  HashLfuCache::{ sliceNum, capacity, shards }
-}
-
-///|
-/// 内部辅助函数：根据 key 计算所在分片
-fn[K, V] HashLfuCache::get_shard_index(
-  self : HashLfuCache[K, V],
-  key : UInt,
-) -> UInt {
-  key % self.sliceNum
-}
-
-///|
-/// 获取 key 对应的值
-pub fn[K : Eq + Hash, V] HashLfuCache::get(
-  self : HashLfuCache[K, V],
-  key : K,
-  capacity : Int,
-) -> V? {
-  let idx = self.get_shard_index(capacity.reinterpret_as_uint())
-  let shard = self.shards[idx.reinterpret_as_int()]
-  shard.get(key)
-}
-
-///|
-pub fn[K : Eq + Hash, V] HashLfuCache::put(
-  self : HashLfuCache[K, V],
-  key : K,
-  value : V,
-  capacity : Int,
-) -> Unit {
-  let idx = self.get_shard_index(capacity.reinterpret_as_uint())
-  let shard = self.shards[idx.reinterpret_as_int()]
-  shard.put(key, value)
-}
-
-///|
-pub fn[K : Eq + Hash, V] HashLfuCache::purge(self : HashLfuCache[K, V]) -> Unit {
-  for nodeList in self.shards {
-    nodeList.purge()
-  }
 }
 
 ///|

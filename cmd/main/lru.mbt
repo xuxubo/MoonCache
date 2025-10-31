@@ -16,27 +16,32 @@ pub fn[Key, Value] LruNode::new(
 }
 
 ///|
-pub fn[K, V] LruNode::getKey(self : LruNode[K, V]) -> K {
+pub fn[Key, Value] LruNode::getKey(self : LruNode[Key, Value]) -> Key {
   self.key.unwrap()
 }
 
 ///|
-pub fn[K, V] LruNode::getValue(self : LruNode[K, V]) -> V {
+pub fn[Key, Value] LruNode::getValue(self : LruNode[Key, Value]) -> Value {
   self.value.unwrap()
 }
 
 ///|
-pub fn[K, V] LruNode::setValue(self : LruNode[K, V], value : V) -> Unit {
+pub fn[Key, Value] LruNode::setValue(
+  self : LruNode[Key, Value],
+  value : Value,
+) -> Unit {
   self.value = Some(value)
 }
 
 ///|
-pub fn[K, V] LruNode::getAccessCount(self : LruNode[K, V]) -> UInt {
+pub fn[Key, Value] LruNode::getAccessCount(self : LruNode[Key, Value]) -> UInt {
   self.accessCount
 }
 
 ///|
-pub fn[K, V] LruNode::incrementAccessCount(self : LruNode[K, V]) -> Unit {
+pub fn[Key, Value] LruNode::incrementAccessCount(
+  self : LruNode[Key, Value],
+) -> Unit {
   self.accessCount += 1
 }
 
@@ -60,9 +65,9 @@ pub fn[Key, Value] LruNodeLink::new(size : UInt) -> LruNodeLink[Key, Value] {
 }
 
 ///|
-pub fn[K, V] LruNodeLink::insertNode(
-  self : LruNodeLink[K, V],
-  node : Ref[LruNode[K, V]],
+pub fn[Key, Value] LruNodeLink::insertNode(
+  self : LruNodeLink[Key, Value],
+  node : Ref[LruNode[Key, Value]],
 ) -> Unit { //尾部插入节点
   // 取 dummyTail 之前的节点
   let prevNode = self.dummyTail.val.prev.unwrap()
@@ -76,9 +81,9 @@ pub fn[K, V] LruNodeLink::insertNode(
 }
 
 ///|
-pub fn[K, V] LruNodeLink::removeNode(
-  self : LruNodeLink[K, V],
-  node : Ref[LruNode[K, V]],
+pub fn[Key, Value] LruNodeLink::removeNode(
+  self : LruNodeLink[Key, Value],
+  node : Ref[LruNode[Key, Value]],
 ) -> Unit {
   let prevNode = node.val.prev.unwrap()
   let nextNode = node.val.next.unwrap()
@@ -94,60 +99,60 @@ pub fn[K, V] LruNodeLink::removeNode(
 }
 
 ///|
-pub struct LruCache[K, V] {
-  nodeMap : Map[K, LruNode[K, V]]
+pub struct LruCache[Key, Value] {
+  nodeMap : Map[Key, LruNode[Key, Value]]
   capacity : UInt
-  lruNodeLink : LruNodeLink[K, V]
+  lruNodeLink : LruNodeLink[Key, Value]
 }
 
 ///|
-pub fn[K, V] LruCache::new(capacity : UInt) -> LruCache[K, V] {
-  let nodeMap : Map[K, LruNode[K, V]] = Map::new()
+pub fn[Key, Value] LruCache::new(capacity : UInt) -> LruCache[Key, Value] {
+  let nodeMap : Map[Key, LruNode[Key, Value]] = Map::new()
   let lruNodeLink = LruNodeLink::new(0)
   LruCache::{ nodeMap, capacity, lruNodeLink }
 }
 
 ///|
-pub fn[K, V] LruCache::updateExistingNode(
-  self : LruCache[K, V],
-  node : LruNode[K, V],
-  value : V,
+pub fn[Key, Value] LruCache::updateExistingNode(
+  self : LruCache[Key, Value],
+  node : LruNode[Key, Value],
+  value : Value,
 ) -> Unit {
   node.value = Some(value)
   self.moveToMostRecent(node)
 }
 
 ///|
-pub fn[K, V] LruCache::removeNode(
-  self : LruCache[K, V],
-  node : LruNode[K, V],
+pub fn[Key, Value] LruCache::removeNode(
+  self : LruCache[Key, Value],
+  node : LruNode[Key, Value],
 ) -> Unit {
   let lruNodeLink = self.lruNodeLink
   lruNodeLink.removeNode(@ref.new(node))
 }
 
 ///|
-pub fn[K, V] LruCache::insertNode(
-  self : LruCache[K, V],
-  node : LruNode[K, V],
+pub fn[Key, Value] LruCache::insertNode(
+  self : LruCache[Key, Value],
+  node : LruNode[Key, Value],
 ) -> Unit {
   let lruNodeLink = self.lruNodeLink
   lruNodeLink.insertNode(@ref.new(node))
 }
 
 ///|
-pub fn[K, V] LruCache::moveToMostRecent(
-  self : LruCache[K, V],
-  node : LruNode[K, V],
+pub fn[Key, Value] LruCache::moveToMostRecent(
+  self : LruCache[Key, Value],
+  node : LruNode[Key, Value],
 ) -> Unit {
   self.removeNode(node)
   self.insertNode(node)
 }
 
 ///|
-pub fn[K : Eq + Hash, V] addNewNode(
-  self : LruCache[K, V],
-  node : LruNode[K, V],
+pub fn[Key : Eq + Hash, Value] addNewNode(
+  self : LruCache[Key, Value],
+  node : LruNode[Key, Value],
 ) -> Unit {
   if self.capacity <= self.lruNodeLink.size {
     self.evictLeastRecent()
@@ -158,17 +163,17 @@ pub fn[K : Eq + Hash, V] addNewNode(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LruCache::evictLeastRecent(
-  self : LruCache[K, V],
+pub fn[Key : Eq + Hash, Value] LruCache::evictLeastRecent(
+  self : LruCache[Key, Value],
 ) -> Unit {
   let _ = self.popLeastRecent()
 
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LruCache::popLeastRecent(
-  self : LruCache[K, V],
-) -> LruNode[K, V]? {
+pub fn[Key : Eq + Hash, Value] LruCache::popLeastRecent(
+  self : LruCache[Key, Value],
+) -> LruNode[Key, Value]? {
   if self.nodeMap.is_empty() {
     return None
   }
@@ -186,10 +191,10 @@ pub fn[K : Eq + Hash, V] LruCache::popLeastRecent(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LruCache::put(
-  self : LruCache[K, V],
-  key : K,
-  value : V,
+pub fn[Key : Eq + Hash, Value] LruCache::put(
+  self : LruCache[Key, Value],
+  key : Key,
+  value : Value,
 ) -> Unit {
   if self.capacity <= 0 {
     return
@@ -202,7 +207,10 @@ pub fn[K : Eq + Hash, V] LruCache::put(
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LruCache::get(self : LruCache[K, V], key : K) -> V? {
+pub fn[Key : Eq + Hash, Value] LruCache::get(
+  self : LruCache[Key, Value],
+  key : Key,
+) -> Value? {
   // 从哈希表中查找节点
   let nodeOpt = self.nodeMap.get(key)
   match nodeOpt {
@@ -210,7 +218,6 @@ pub fn[K : Eq + Hash, V] LruCache::get(self : LruCache[K, V], key : K) -> V? {
     Some(node) => {
       // 命中缓存：将节点移动到最近使用位置
       self.moveToMostRecent(node)
-
       // 返回节点值的副本
       node.value
     }
@@ -218,16 +225,16 @@ pub fn[K : Eq + Hash, V] LruCache::get(self : LruCache[K, V], key : K) -> V? {
 }
 
 ///|
-pub fn[K : Eq + Hash, V] LruCache::remove(
-  self : LruCache[K, V],
-  key : K,
+pub fn[Key : Eq + Hash, Value] LruCache::remove(
+  self : LruCache[Key, Value],
+  key : Key,
 ) -> Unit {
   // 从哈希表中查找节点
   let nodeOpt = self.nodeMap.get(key)
   match nodeOpt {
-    None => ... // 没有命中缓存
+    None => ...
     Some(node) => {
-      // 命中缓存：将节点移动到最近使用位置
+      // 命中缓存：移除节点
       self.removeNode(node)
       self.nodeMap.remove(node.getKey())
     }
@@ -239,7 +246,7 @@ test {
   println("==== LRU Cache 测试开始 ====")
 
   // 创建一个容量为 3 的 LRU 缓存
-  let cache = LruCache::new(3)
+  let cache : LruCache[String, Int] = LruCache::new(3)
 
   // 插入三个元素
   cache.put("A", 1)

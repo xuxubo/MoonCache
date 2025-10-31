@@ -1,19 +1,19 @@
 ///|
-pub struct LruKCache[K, V] {
-  lrucache : LruCache[K, V]
-  history_value_map : Map[K, V]
+pub struct LruKCache[Key, Value] {
+  lrucache : LruCache[Key, Value]
+  history_value_map : Map[Key, Value]
   k : UInt
   history_capacity : UInt
-  history_count : Map[K, UInt]
+  history_count : Map[Key, UInt]
 }
 
 ///|
-/// 创建新的 LRU-K 缓存
-pub fn[K, V] LruKCache::new(
+/// 创建新的 LRU-Key 缓存
+pub fn[Key, Value] LruKCache::new(
   capacity : UInt,
   k : UInt,
   history_capacity : UInt,
-) -> LruKCache[K, V] {
+) -> LruKCache[Key, Value] {
   let lrucache = LruCache::new(capacity)
   let history_value_map = Map::new()
   let history_count = Map::new()
@@ -22,7 +22,10 @@ pub fn[K, V] LruKCache::new(
 
 ///|
 /// 获取键对应的值
-pub fn[K : Eq + Hash, V] LruKCache::get(self : LruKCache[K, V], key : K) -> V? {
+pub fn[Key : Eq + Hash, Value] LruKCache::get(
+  self : LruKCache[Key, Value],
+  key : Key,
+) -> Value? {
   // 1️⃣ 尝试直接从主缓存获取
   match self.lrucache.get(key) {
     Some(value) => return Some(value)
@@ -36,7 +39,7 @@ pub fn[K : Eq + Hash, V] LruKCache::get(self : LruKCache[K, V], key : K) -> V? {
   }
   self.history_count.set(key, count)
 
-  // 3️⃣ 如果未命中主缓存但访问次数达到 K 次，从历史中加载到主缓存
+  // 3️⃣ 如果未命中主缓存但访问次数达到 k 次，从历史中加载到主缓存
   if count >= self.k {
     match self.history_value_map.get(key) {
       Some(value) => {
@@ -54,10 +57,10 @@ pub fn[K : Eq + Hash, V] LruKCache::get(self : LruKCache[K, V], key : K) -> V? {
 
 ///|
 /// 插入键值对
-pub fn[K : Eq + Hash, V] LruKCache::put(
-  self : LruKCache[K, V],
-  key : K,
-  value : V,
+pub fn[Key : Eq + Hash, Value] LruKCache::put(
+  self : LruKCache[Key, Value],
+  key : Key,
+  value : Value,
 ) -> Unit {
   // 1️⃣ 如果主缓存中已存在，则更新
   match self.lrucache.get(key) {
@@ -76,7 +79,7 @@ pub fn[K : Eq + Hash, V] LruKCache::put(
   self.history_count.set(key, count)
   self.history_value_map.set(key, value)
 
-  // 3️⃣ 达到 K 次访问后进入主缓存
+  // 3️⃣ 达到 k 次访问后进入主缓存
   if count >= self.k {
     self.history_count.remove(key)
     self.history_value_map.remove(key)
